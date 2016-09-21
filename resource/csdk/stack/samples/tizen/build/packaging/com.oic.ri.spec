@@ -37,7 +37,7 @@ SLP oicri application
 echo %{ROOTDIR}
 
 scons TARGET_OS=tizen -c
-scons TARGET_OS=tizen TARGET_TRANSPORT=%{TARGET_TRANSPORT} SECURED=%{SECURED} RELEASE=%{RELEASE} LOGGING=%{LOGGING} ROUTING=%{ROUTING} WITH_TCP=%{WITH_TCP}
+scons TARGET_OS=tizen TARGET_TRANSPORT=%{TARGET_TRANSPORT} SECURED=%{SECURED} RELEASE=%{RELEASE} LOGGING=%{LOGGING} ROUTING=%{ROUTING} WITH_TCP=%{WITH_TCP} WITH_PROXY=%{WITH_PROXY}
 
 %install
 mkdir -p %{DEST_INC_DIR}
@@ -47,7 +47,7 @@ cp -f %{ROOTDIR}/resource/csdk/liboctbstack.so %{buildroot}/%{_libdir}
 cp -f %{ROOTDIR}/resource/c_common/libc_common.a %{buildroot}/%{_libdir}
 cp -f %{ROOTDIR}/resource/csdk/security/libocsrm.a %{buildroot}/%{_libdir}
 cp -f %{ROOTDIR}/resource/csdk/connectivity/src/libconnectivity_abstraction.so %{buildroot}/%{_libdir}
-cp -f %{ROOTDIR}/resource/csdk/connectivity/lib/libcoap-4.1.1/libcoap.a %{buildroot}/%{_libdir}
+cp -f %{ROOTDIR}/extlibs/libcoap/libcoap.a %{buildroot}/%{_libdir}
 cp /usr/lib/libuuid.so.1 %{buildroot}%{_libdir}
 if echo %{SECURED}|grep -qi '1'; then
 	cp -f %{ROOTDIR}/out/tizen/*/*/extlibs/tinydtls/libtinydtls.a %{buildroot}/%{_libdir}

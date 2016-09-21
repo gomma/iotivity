@@ -21,6 +21,7 @@
 #include "NSProviderTopic.h"
 #include "oic_string.h"
 #include "oic_malloc.h"
+#include <pthread.h>
 
 NSResult NSSendTopicUpdation();
 
@@ -72,6 +73,7 @@ NSResult NSAddTopics(const char * topicName)
     if(NSStorageWrite(registeredTopicList, element) != NS_OK)
     {
         NS_LOG(DEBUG, "fail to write cache");
+        return NS_ERROR;
     }
     NSSendTopicUpdation();
 
@@ -196,13 +198,12 @@ NSResult NSSendTopicUpdationToConsumer(char *consumerId)
 
     NSCacheSubData * subData = (NSCacheSubData*) element->data;
 
-    if (OCNotifyListOfObservers(rHandle, (OCObservationId*)&subData->messageObId, 1, payload, OC_HIGH_QOS)
-            != OC_STACK_OK)
+    if (OCNotifyListOfObservers(rHandle, (OCObservationId*)&subData->messageObId, 1, payload,
+            OC_HIGH_QOS) != OC_STACK_OK)
     {
         NS_LOG(ERROR, "fail to send topic updation");
         OCRepPayloadDestroy(payload);
         return NS_ERROR;
-
     }
 
     OCRepPayloadDestroy(payload);
@@ -233,12 +234,6 @@ NSResult NSSendTopicList(OCEntityHandlerRequest * entityHandlerRequest)
         }
     }
 
-    if(!topics)
-    {
-        NS_LOG(DEBUG, "topicList is NULL");
-        return NS_ERROR;
-    }
-
     // make response for the Get Request
     OCEntityHandlerResponse response;
     response.numSendVendorSpecificHeaderOptions = 0;
@@ -253,33 +248,6 @@ NSResult NSSendTopicList(OCEntityHandlerRequest * entityHandlerRequest)
         return NS_ERROR;
     }
 
-    size_t dimensionSize = (size_t)NSProviderGetTopicListSize(topics);
-
-    NS_LOG_V(DEBUG, "dimensionSize = %d", dimensionSize);
-
-    if(!dimensionSize)
-    {
-        return NS_ERROR;
-    }
-
-    OCRepPayload** payloadTopicArray = (OCRepPayload **) OICMalloc(
-            sizeof(OCRepPayload *) * dimensionSize);
-
-    size_t dimensions[3] = {dimensionSize, 0, 0};
-
-    for (int i = 0; i < (int)dimensionSize; i++)
-    {
-        NS_LOG_V(DEBUG, "topicName = %s", topics->topicName);
-        NS_LOG_V(DEBUG, "topicState = %d",(int) topics->state);
-
-        payloadTopicArray[i] = OCRepPayloadCreate();
-        OCRepPayloadSetPropString(payloadTopicArray[i], NS_ATTRIBUTE_TOPIC_NAME, topics->topicName);
-        OCRepPayloadSetPropInt(payloadTopicArray[i], NS_ATTRIBUTE_TOPIC_SELECTION,
-                (int)topics->state);
-
-        topics = topics->next;
-    }
-
     OCRepPayloadSetUri(payload, NS_COLLECTION_TOPIC_URI);
     if(id)
     {
@@ -287,8 +255,49 @@ NSResult NSSendTopicList(OCEntityHandlerRequest * entityHandlerRequest)
     }
     OCRepPayloadSetPropString(payload, NS_ATTRIBUTE_PROVIDER_ID,
         NSGetProviderInfo()->providerId);
-    OCRepPayloadSetPropObjectArray(payload, NS_ATTRIBUTE_TOPIC_LIST,
-            (const OCRepPayload**)(payloadTopicArray), dimensions);
+
+    if(topics)
+    {
+        NS_LOG(DEBUG, "topicList is NULL");
+        size_t dimensionSize = (size_t)NSProviderGetTopicListSize(topics);
+
+        NS_LOG_V(DEBUG, "dimensionSize = %d", (int)dimensionSize);
+
+        if(!dimensionSize)
+        {
+            return NS_ERROR;
+        }
+
+        OCRepPayload** payloadTopicArray = (OCRepPayload **) OICMalloc(
+                sizeof(OCRepPayload *) * dimensionSize);
+
+        size_t dimensions[3] = {dimensionSize, 0, 0};
+
+        for (int i = 0; i < (int)dimensionSize; i++)
+        {
+            NS_LOG_V(DEBUG, "topicName = %s", topics->topicName);
+            NS_LOG_V(DEBUG, "topicState = %d",(int) topics->state);
+
+            payloadTopicArray[i] = OCRepPayloadCreate();
+            OCRepPayloadSetPropString(payloadTopicArray[i], NS_ATTRIBUTE_TOPIC_NAME,
+                    topics->topicName);
+            OCRepPayloadSetPropInt(payloadTopicArray[i], NS_ATTRIBUTE_TOPIC_SELECTION,
+                    (int)topics->state);
+
+            topics = topics->next;
+        }
+
+
+        OCRepPayloadSetPropObjectArray(payload, NS_ATTRIBUTE_TOPIC_LIST,
+                (const OCRepPayload**)(payloadTopicArray), dimensions);
+    }
+    else
+    {
+        size_t dimensions[3] = {0, 0, 0};
+
+        OCRepPayloadSetPropObjectArrayAsOwner(payload, NS_ATTRIBUTE_TOPIC_LIST,
+                (OCRepPayload **) NULL, dimensions);
+    }
 
     response.requestHandle = entityHandlerRequest->requestHandle;
     response.resourceHandle = entityHandlerRequest->resource;
@@ -332,7 +341,7 @@ NSResult NSPostConsumerTopics(OCEntityHandlerRequest * entityHandlerRequest)
     payloadValue = NSPayloadFindValue(payload, NS_ATTRIBUTE_TOPIC_LIST);
     size_t dimensionSize = calcDimTotal(payloadValue->arr.dimensions);
     size_t dimensions[3] = {dimensionSize, 0, 0};
-    OCRepPayloadGetPropObjectArray(payload, NS_ATTRIBUTE_TOPIC_LIST, & topicListPayload, dimensions);
+    OCRepPayloadGetPropObjectArray(payload, NS_ATTRIBUTE_TOPIC_LIST, &topicListPayload, dimensions);
 
     for(int i = 0; i <(int)dimensionSize; i++)
     {
@@ -354,9 +363,11 @@ NSResult NSPostConsumerTopics(OCEntityHandlerRequest * entityHandlerRequest)
             NSCacheElement * newObj = (NSCacheElement *) OICMalloc(sizeof(NSCacheElement));
             newObj->data = (NSCacheData *) topicSubData;
             newObj->next = NULL;
+
             NSStorageWrite(consumerTopicList, newObj);
         }
     }
+    NSSendTopicUpdationToConsumer(consumerId);
 
     NS_LOG(DEBUG, "NSPostConsumerTopics() - OUT");
     return NS_OK;
@@ -387,17 +398,26 @@ void * NSTopicSchedule(void * ptr)
                     NSFreeOCEntityHandlerRequest((OCEntityHandlerRequest*) node->taskData);
                     break;
                 case TASK_SUBSCRIBE_TOPIC:
+                {
                     NS_LOG(DEBUG, "CASE TASK_SUBSCRIBE_TOPIC : ");
                     NSCacheElement * newObj = (NSCacheElement *) OICMalloc(sizeof(NSCacheElement));
                     newObj->data = node->taskData;
                     newObj->next = NULL;
                     NSStorageWrite(consumerTopicList, newObj);
+                    NSCacheTopicSubData * topicSubData = (NSCacheTopicSubData *) node->taskData;
+                    NSSendTopicUpdationToConsumer(topicSubData->id);
+                }
                     break;
                 case TASK_UNSUBSCRIBE_TOPIC:
+                {
                     NS_LOG(DEBUG, "CASE TASK_SUBSCRIBE_TOPIC : ");
                     NSProviderDeleteConsumerTopic(consumerTopicList,
                             (NSCacheTopicSubData *) node->taskData);
-                    NS_LOG(DEBUG, "CASE TASK_SUBSCRIBE_TOPIC AFter: ");
+                    NSCacheTopicSubData * topicSubData = (NSCacheTopicSubData *) node->taskData;
+                    NSSendTopicUpdationToConsumer(topicSubData->id);
+                    OICFree(topicSubData->topicName);
+                    OICFree(topicSubData);
+                }
                     break;
                 case TASK_ADD_TOPIC:
                 {
@@ -416,6 +436,25 @@ void * NSTopicSchedule(void * ptr)
                     NS_LOG(DEBUG, "TASK_POST_TOPIC : ");
                     NSPostConsumerTopics((OCEntityHandlerRequest*) node->taskData);
                     NSFreeOCEntityHandlerRequest((OCEntityHandlerRequest*) node->taskData);
+                }
+                    break;
+                case TASK_GET_TOPICS:
+                {
+                    NS_LOG(DEBUG, "TASK_GET_TOPICS : ");
+                    NSTopicSynchronization * topicData = (NSTopicSynchronization *) node->taskData;
+                    NSTopicLL * topics = NSProviderGetTopicsCacheData(registeredTopicList);
+                    topicData->topics = topics;
+                    pthread_cond_signal(&topicData->condition);
+                }
+                    break;
+                case TAST_GET_CONSUMER_TOPICS:
+                {
+                    NS_LOG(DEBUG, "TASK_GET_CONSUMER_TOPICS : ");
+                    NSTopicSynchronization * topicData = (NSTopicSynchronization *) node->taskData;
+                    NSTopicLL * topics = NSProviderGetConsumerTopicsCacheData(registeredTopicList,
+                                consumerTopicList, topicData->consumerId);
+                    topicData->topics = topics;
+                    pthread_cond_signal(&topicData->condition);
                 }
                     break;
                 default:

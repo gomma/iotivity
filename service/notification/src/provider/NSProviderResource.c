@@ -72,11 +72,14 @@ NSResult NSPublishResourceToCloud(char *serverAddress)
 NSResult NSCreateResource(char *uri)
 {
     NS_LOG(DEBUG, "NSCreateResource - IN");
+
     if (!uri)
     {
         NS_LOG(NS_ERROR, "Resource URI cannot be NULL");
         return NS_ERROR;
     }
+
+    uint8_t resourceProperties;
 
     if (strcmp(uri, NS_ROOT_URI) == 0)
     {
@@ -88,8 +91,18 @@ NSResult NSCreateResource(char *uri)
         NotificationResource.version = VERSION;
         NotificationResource.handle = NULL;
 
+        if(NSGetResourceSecurity())
+        {
+            NS_LOG(DEBUG, "Create secured resource");
+            resourceProperties = OC_DISCOVERABLE | OC_SECURE;
+        }
+        else
+        {
+            resourceProperties = OC_DISCOVERABLE;
+        }
+
         if (OCCreateResource(&NotificationResource.handle, NS_ROOT_TYPE, NS_DEFAULT_INTERFACE,
-                NS_ROOT_URI, NSEntityHandlerNotificationCb, NULL, OC_DISCOVERABLE) != OC_STACK_OK)
+                NS_ROOT_URI, NSEntityHandlerNotificationCb, NULL, resourceProperties) != OC_STACK_OK)
         {
             NS_LOG(NS_ERROR, "Fail to Create Notification Resource");
             return NS_ERROR;
@@ -110,9 +123,19 @@ NSResult NSCreateResource(char *uri)
         NotificationMessageResource.topicName = NULL;
         NotificationMessageResource.mediaContents = NULL;
 
+        if(NSGetResourceSecurity())
+        {
+            NS_LOG(DEBUG, "Create secured resource");
+            resourceProperties = OC_OBSERVABLE | OC_SECURE;
+        }
+        else
+        {
+            resourceProperties = OC_OBSERVABLE;
+        }
+
         if (OCCreateResource(&NotificationMessageResource.handle, NS_COLLECTION_MESSAGE_TYPE,
                 NS_DEFAULT_INTERFACE, NS_COLLECTION_MESSAGE_URI, NSEntityHandlerMessageCb, NULL,
-                OC_OBSERVABLE) != OC_STACK_OK)
+                resourceProperties) != OC_STACK_OK)
         {
             NS_LOG(NS_ERROR, "Fail to Create Notification Message Resource");
             return NS_ERROR;
@@ -125,9 +148,19 @@ NSResult NSCreateResource(char *uri)
         NotificationSyncResource.state = NULL;
         NotificationSyncResource.handle = NULL;
 
+        if(NSGetResourceSecurity())
+        {
+            NS_LOG(DEBUG, "Create secured resource");
+            resourceProperties = OC_OBSERVABLE | OC_SECURE;
+        }
+        else
+        {
+            resourceProperties = OC_OBSERVABLE;
+        }
+
         if (OCCreateResource(&(NotificationSyncResource.handle), NS_COLLECTION_SYNC_TYPE,
                 NS_DEFAULT_INTERFACE, NS_COLLECTION_SYNC_URI, NSEntityHandlerSyncCb, NULL,
-                OC_OBSERVABLE) != OC_STACK_OK)
+                resourceProperties) != OC_STACK_OK)
         {
             NS_LOG(NS_ERROR, "Fail to Create Notification Sync Resource");
             return NS_ERROR;
@@ -140,9 +173,19 @@ NSResult NSCreateResource(char *uri)
         NotificationTopicResource.TopicList = NULL;
         NotificationTopicResource.handle = NULL;
 
+        if(NSGetResourceSecurity())
+        {
+            NS_LOG(DEBUG, "Create secured resource");
+            resourceProperties = OC_DISCOVERABLE | OC_SECURE;
+        }
+        else
+        {
+            resourceProperties = OC_DISCOVERABLE;
+        }
+
         if (OCCreateResource(&(NotificationTopicResource.handle), NS_COLLECTION_TOPIC_TYPE,
                 NS_DEFAULT_INTERFACE, NS_COLLECTION_TOPIC_URI, NSEntityHandlerTopicCb, NULL,
-                OC_DISCOVERABLE) != OC_STACK_OK)
+                resourceProperties) != OC_STACK_OK)
         {
             NS_LOG(NS_ERROR, "Fail to Create Notification Sync Resource");
             return NS_ERROR;
@@ -162,29 +205,14 @@ NSResult NSRegisterResource()
 {
     NS_LOG(DEBUG, "NSRegisterResource - IN");
 
-    if (NSCreateResource(NS_COLLECTION_TOPIC_URI) != NS_OK)
-    {
-        NS_LOG(ERROR, "Fail to register Topic Resource");
-        return NS_ERROR;
-    }
-
-    if (NSCreateResource(NS_COLLECTION_SYNC_URI) != NS_OK)
-    {
-        NS_LOG(ERROR, "Fail to register Sync Resource");
-        return NS_ERROR;
-    }
-
-    if (NSCreateResource(NS_COLLECTION_MESSAGE_URI) != NS_OK)
-    {
-        NS_LOG(ERROR, "Fail to register Message Resource");
-        return NS_ERROR;
-    }
-
-    if (NSCreateResource(NS_ROOT_URI) != NS_OK)
-    {
-        NS_LOG(ERROR, "Fail to register Notification Resource");
-        return NS_ERROR;
-    }
+    NS_CREATE_RESOURCE(
+            NSCreateResource(NS_COLLECTION_TOPIC_URI), "Fail to register Topic Resource");
+    NS_CREATE_RESOURCE(
+            NSCreateResource(NS_COLLECTION_SYNC_URI), "Fail to register Sync Resource");
+    NS_CREATE_RESOURCE(
+            NSCreateResource(NS_COLLECTION_MESSAGE_URI), "Fail to register Message Resource");
+    NS_CREATE_RESOURCE(
+            NSCreateResource(NS_ROOT_URI), "Fail to register Notification Resource");
 
     NS_LOG(DEBUG, "NSRegisterResource - OUT");
     return NS_OK;
@@ -194,29 +222,14 @@ NSResult NSUnRegisterResource()
 {
     NS_LOG(DEBUG, "NSUnRegisterResource - IN");
 
-    if (OCDeleteResource(NotificationResource.handle) != OC_STACK_OK)
-    {
-        NS_LOG(ERROR, "Fail to Delete Notification Resource");
-        return NS_ERROR;
-    }
-
-    if (OCDeleteResource(NotificationMessageResource.handle) != OC_STACK_OK)
-    {
-        NS_LOG(ERROR, "Fail to Delete Notification Message Resource");
-        return NS_ERROR;
-    }
-
-    if (OCDeleteResource(NotificationSyncResource.handle) != OC_STACK_OK)
-    {
-        NS_LOG(ERROR, "Fail to Delete Notification Sync Resource");
-        return NS_ERROR;
-    }
-
-    if (OCDeleteResource(NotificationTopicResource.handle) != OC_STACK_OK)
-    {
-        NS_LOG(ERROR, "Fail to Delete Notification Topic Resource");
-        return NS_ERROR;
-    }
+    NS_DELETE_RESOURCE(
+            OCDeleteResource(NotificationResource.handle), "Fail to Delete Notification Resource");
+    NS_DELETE_RESOURCE(OCDeleteResource(NotificationMessageResource.handle),
+            "Fail to Delete Notification Message Resource");
+    NS_DELETE_RESOURCE(OCDeleteResource(NotificationSyncResource.handle),
+            "Fail to Delete Notification Sync Resource");
+    NS_DELETE_RESOURCE(OCDeleteResource(NotificationTopicResource.handle),
+            "Fail to Delete Notification Topic Resource");
 
     NotificationResource.handle = NULL;
     NotificationMessageResource.handle = NULL;

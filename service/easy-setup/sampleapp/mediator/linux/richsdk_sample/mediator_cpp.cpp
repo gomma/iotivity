@@ -222,11 +222,14 @@ void cloudProvisioningStatusCallback(std::shared_ptr< CloudPropProvisioningStatu
         case ES_OK:
             cout << "Cloud Provisioning is success." << endl;
             break;
-        case ES_FOUND_ENROLLEE:
-            cout << "Enrollee is found in a given network." << endl;
-            break;
-        case ES_NOT_FOUND_ENROLLEE:
+        case ES_SECURE_RESOURCE_DISCOVERY_FAILURE:
             cout << "Enrollee is not found in a given network." << endl;
+            break;
+        case ES_ACL_PROVISIONING_FAILURE:
+            cout << "ACL provisioning is failed." << endl;
+            break;
+        case ES_CERT_PROVISIONING_FAILURE:
+            cout << "CERT provisioning is failed." << endl;
             break;
         default:
             cout << "Cloud Provisioning is failed." << endl;
@@ -244,6 +247,7 @@ void provisionCloudProperty()
     CloudProp cloudProp;
     cloudProp.setCloudProp("authCode", "authProvider", "ciServer");
     cloudProp.setCloudID("f002ae8b-c42c-40d3-8b8d-1927c17bd1b3");
+    cloudProp.setCredID(1);
 
     try
     {
@@ -366,7 +370,7 @@ int main()
 
     PlatformConfig config
     {
-        OC::ServiceType::InProc, ModeType::Both, "0.0.0.0", 0, OC::QualityOfService::LowQos, &ps
+        OC::ServiceType::InProc, ModeType::Both, "0.0.0.0", 0, OC::QualityOfService::HighQos, &ps
     };
 
     OCPlatform::Configure(config);
