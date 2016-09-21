@@ -212,11 +212,7 @@ if env.get('LOGGING'):
 if ca_os == 'android':
 	lib_env.AppendUnique(LINKFLAGS = ['-Wl,-soname,libconnectivity_abstraction.so'])
 
-<<<<<<< HEAD
-if ca_os in ['android', 'tizen', 'linux', 'openwrt']:
-=======
-if ca_os in ['android', 'tizen', 'linux', 'yocto']:
->>>>>>> 0b7820b7d605c16102937a15a853c1d75cb4278d
+if ca_os in ['android', 'tizen', 'linux', 'yocto', 'openwrt']:
 	lib_env.AppendUnique(LIBS = ['coap'])
 	if lib_env.get('SECURED') == '1':
 		lib_env.AppendUnique(LIBS = ['tinydtls'])
