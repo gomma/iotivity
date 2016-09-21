@@ -7,7 +7,7 @@ import platform
 
 # Map of host os and allowed target os (host: allowed target os)
 host_target_map = {
-		'linux': ['linux', 'android', 'arduino', 'yocto', 'tizen'],
+		'linux': ['linux', 'android', 'arduino', 'yocto', 'tizen', 'openwrt'],
 		'windows': ['windows', 'android', 'arduino'],
 		'darwin': ['darwin', 'ios', 'android', 'arduino'],
 		}
@@ -21,7 +21,8 @@ os_arch_map = {
 		'darwin': ['i386', 'x86_64'],
 		'ios': ['i386', 'x86_64', 'armv7', 'armv7s', 'arm64'],
 		'arduino': ['avr', 'arm'],
-                'yocto': ['i586', 'x86_64', 'arm', 'powerpc', 'powerpc64', 'mips', 'mipsel'],
+		'yocto': ['i586', 'x86_64', 'arm', 'powerpc', 'powerpc64', 'mips', 'mipsel'],
+		'openwrt': ['mipsel'],
 		}
 
 host = platform.system().lower()
@@ -80,7 +81,7 @@ AddOption('--prefix',
 ######################################################################
 # Platform(build target) specific options: SDK/NDK & toolchain
 ######################################################################
-targets_support_cc = ['linux', 'arduino', 'tizen']
+targets_support_cc = ['linux', 'arduino', 'tizen', 'openwrt']
 
 if target_os in targets_support_cc:
 	# Set cross compile toolchain
@@ -279,7 +280,7 @@ else:
     If target_os is not Yocto, continue with the regular build process
     '''
     # Load config of target os
-    if target_os in ['linux', 'tizen']:
+    if target_os in ['linux', 'tizen', 'openwrt']:
 		env.SConscript('linux/SConscript')
     else:
 		env.SConscript(target_os + '/SConscript')

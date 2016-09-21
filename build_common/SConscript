@@ -10,7 +10,7 @@ project_version = '1.2.0'
 
 # Map of host os and allowed target os (host: allowed target os)
 host_target_map = {
-		'linux': ['linux', 'android', 'arduino', 'yocto', 'tizen'],
+		'linux': ['linux', 'android', 'arduino', 'yocto', 'tizen', 'openwrt'],
 		'windows': ['windows', 'android', 'arduino'],
 		'darwin': ['darwin', 'ios', 'android', 'arduino'],
 		'msys_nt' :['msys_nt'],
@@ -27,6 +27,7 @@ os_arch_map = {
 		'ios': ['i386', 'x86_64', 'armv7', 'armv7s', 'arm64'],
 		'arduino': ['avr', 'arm'],
 		'yocto': ['i586', 'x86_64', 'arm', 'powerpc', 'powerpc64', 'mips', 'mipsel'],
+		'openwrt': ['mipsel'],
 		}
 
 host = platform.system().lower()
@@ -126,7 +127,7 @@ AddOption('--prefix',
 ######################################################################
 # Platform(build target) specific options: SDK/NDK & toolchain
 ######################################################################
-targets_support_cc = ['linux', 'arduino', 'tizen']
+targets_support_cc = ['linux', 'arduino', 'tizen', 'openwrt']
 
 if target_os in targets_support_cc:
 	# Set cross compile toolchain

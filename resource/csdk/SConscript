@@ -92,7 +92,7 @@ if env.get('SECURED') == '1':
 	if env.get('WITH_TCP') == True:
 		liboctbstack_env.AppendUnique(LIBS = ['mbedtls','mbedx509','mbedcrypto'])
 
-if target_os in ['android', 'linux', 'tizen', 'msys_nt', 'windows']:
+if target_os in ['android', 'linux', 'tizen', 'msys_nt', 'windows', 'openwrt']:
 	liboctbstack_env.PrependUnique(LIBS = ['connectivity_abstraction'])
 
 	if with_ra_ibb:
@@ -120,7 +120,7 @@ if target_os in ['windows', 'msys_nt']:
 else:
 	liboctbstack_env.AppendUnique(LIBS = ['m'])
 
-if target_os in ['tizen', 'linux']:
+if target_os in ['tizen', 'linux', 'openwrt']:
 	liboctbstack_env.ParseConfig("pkg-config --cflags --libs uuid")
 if target_os in ['tizen']:
 	liboctbstack_env.ParseConfig('pkg-config --cflags --libs sqlite3')

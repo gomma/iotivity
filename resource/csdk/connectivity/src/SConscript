@@ -150,6 +150,9 @@ if 'ALL' in ca_transport:
 				transports.append('nfc_adapter')
 		elif ca_os in['darwin','ios', 'msys_nt', 'windows']:
 				transports.append('ip_adapter')
+		elif ca_os in ['openwrt']: 
+				transports.append('ip_adapter')
+				transports.append('bt_le_adapter')
 		else:
 				transports.append('ip_adapter')
 				transports.append('bt_edr_adapter')
@@ -175,12 +178,12 @@ if 'BLE' in ca_transport:
 if 'NFC' in ca_transport:
 	env.SConscript(os.path.join(ca_path, 'nfc_adapter/SConscript'))
 
-if ca_os in ['linux', 'tizen', 'android']:
+if ca_os in ['linux', 'tizen', 'android', 'openwrt']:
 	if with_tcp == True:
 		env.SConscript(os.path.join(ca_path, 'tcp_adapter/SConscript'))
 		env.AppendUnique(CPPDEFINES = ['WITH_TCP'])
 
-if ca_os in ['linux', 'tizen', 'android', 'arduino', 'ios']:
+if ca_os in ['linux', 'tizen', 'android', 'arduino', 'ios', 'openwrt']:
 	if (('BLE' in ca_transport) or ('BT' in ca_transport) or ('ALL' in ca_transport)):
 		env.AppendUnique(CPPDEFINES = ['WITH_TCP'])
 
@@ -196,7 +199,7 @@ if env.get('LOGGING'):
 if ca_os == 'android':
 	lib_env.AppendUnique(LINKFLAGS = ['-Wl,-soname,libconnectivity_abstraction.so'])
 
-if ca_os in ['android', 'tizen', 'linux']:
+if ca_os in ['android', 'tizen', 'linux', 'openwrt']:
 	lib_env.AppendUnique(LIBS = ['coap'])
 	if lib_env.get('SECURED') == '1':
 		lib_env.AppendUnique(LIBS = ['tinydtls'])

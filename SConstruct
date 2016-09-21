@@ -56,14 +56,18 @@ build_dir = env.get('BUILD_DIR')
 # Build 'resource' sub-project
 SConscript(build_dir + 'resource/SConscript')
 
-if target_os not in ['arduino','darwin','ios', 'android', 'msys_nt', 'windows']:
+if target_os not in ['arduino','darwin','ios', 'android', 'msys_nt', 'windows', 'openwrt']:
 	SConscript(build_dir + 'examples/OICMiddle/SConscript')
 
 # Build 'service' sub-project
-SConscript(build_dir + 'service/SConscript')
+# 2016.09.13 bygomma : disable service
+# SConscript(build_dir + 'service/SConscript')
+# 2016.09.13 bygomma : end
 
 # Build "cloud" sub-project
-SConscript(build_dir + 'cloud/SConscript')
+# 2016.09.13 bygomma : disable cloud
+# SConscript(build_dir + 'cloud/SConscript')
+# 2016.09.13 bygomma : end
 
 # Build "plugin interface" sub-project
 SConscript(build_dir + 'plugins/SConscript')

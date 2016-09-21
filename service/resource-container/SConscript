@@ -141,7 +141,7 @@ resource_container_env.UserInstallTargetHeader('include/RCSResourceContainer.h',
 ######################################################################
 # build discomfort index sensor sample bundle
 ######################################################################
-if target_os in ['linux', 'tizen', 'android']:
+if target_os in ['linux', 'tizen', 'android', 'openwrt']:
     DI_sensor_bundle_env = resource_container_env.Clone()
     DI_sensor_bundle_env.AppendUnique(CCFLAGS = ['-fPIC'])
 
@@ -164,7 +164,7 @@ if target_os in ['linux', 'tizen', 'android']:
 ######################################################################
 # build BMI sensor sample bundle
 ######################################################################
-if target_os in ['linux', 'tizen', 'android']:
+if target_os in ['linux', 'tizen', 'android', 'openwrt']:
     BMI_sensor_bundle_env = resource_container_env.Clone()
     BMI_sensor_bundle_env.AppendUnique(CCFLAGS = ['-fPIC'])
 

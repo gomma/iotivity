@@ -24,7 +24,7 @@
  * This file contains defined interface for the Zigbee Radio.
  */
 
- #ifdef __cplusplus
+#ifdef __cplusplus
 #include <cfloat>
 #else
 #include <float.h>
@@ -41,6 +41,12 @@
 // This ifdef ensures that "__STDC_IEC_559__" is defined. If it is defined,
 // then we are guaranteed that the 'double' type is 64-bit. Otherwise, the
 // compilation of this file should fail because we are no longer guaranteed.
+// 2016.09.13 bygomma : start
+#ifdef __GCC_IEC_559
+#define __STDC_IEC_559__              1
+# endif
+// 2016.09.13 bygomma : end
+
 #ifndef __STDC_IEC_559__
 #error "Requires IEEE 754 floating point!"
 #endif
